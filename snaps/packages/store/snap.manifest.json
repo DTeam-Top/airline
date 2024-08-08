@@ -1,0 +1,54 @@
+{
+  "version": "0.1.0",
+  "description": "Airline Snap",
+  "proposedName": "Airline",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DTeam-Top/airline.git"
+  },
+  "source": {
+    "shasum": "wFuyFzVVHHHzVoP+OJ8fWycmAwuOatNNY0OrrMb4X30=",
+    "location": {
+      "npm": {
+        "filePath": "dist/bundle.js",
+        "packageName": "airline-snap",
+        "registry": "https://registry.npmjs.org/",
+        "iconPath": "images/logo.svg"
+      }
+    }
+  },
+  "initialPermissions": {
+    "snap_dialog": {},
+    "endowment:rpc": {
+      "dapps": true,
+      "snaps": true
+    },
+    "snap_manageState": {},
+    "endowment:network-access": {},
+    "endowment:page-home": {},
+    "endowment:ethereum-provider": {},
+    "endowment:cronjob": {
+      "jobs": [
+        {
+          "expression": "*/10 * * * * *",
+          "request": {
+            "method": "alert"
+          }
+        },
+        {
+          "expression": "*/10 * * * * *",
+          "request": {
+            "method": "clean"
+          }
+        },
+        {
+          "expression": "*/10 * * * * *",
+          "request": {
+            "method": "fetch"
+          }
+        }
+      ]
+    }
+  },
+  "manifestVersion": "0.1"
+}
