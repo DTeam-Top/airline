@@ -5,6 +5,8 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {AbstractSlnDvp, OfferReceiver, OffChainAttestation, FullEASOffChainAttestation} from "./AbstractSlnDvp.sol";
 import {IEAS} from "@ethereum-attestation-service/eas-contracts/contracts/IEAS.sol";
+import {IClaimable} from "./ISlnDvp.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 struct ClaimingOffer {
     address token;
@@ -44,18 +46,19 @@ contract SlnTokenClaimingDvp is AbstractSlnDvp {
 
         IClaimable tokenContract = IClaimable(token);
 
-        require(seller == tokenContract.owner(), "Invalid seller");
+        require(tokenContract.claimed() < tokenContract.totalClaimable(), "Exceeded total claims");
+        require(seller == Ownable(token).owner(), "Invalid seller");
         require(keccak256(bytes(offerReceiver.idType)) == keccak256(bytes(receiverIdType)), "ID type mismatch");
-        require(tokenContract.claimedCount(offerData.uid) < amount, "Exceeded maximum claims");
+        require(tokenContract.claimedByUid(offerData.uid) < amount, "Exceeded maximum claims for the attestation");
 
         if (price == 0) {
             require(
-                tokenContract.claimedCountById(offerReceiver.idType, offerReceiver.idValue) < 1,
+                tokenContract.claimedById(offerReceiver.idValue) < 1,
                 "Exceeded maximum free claims for the account"
             );
         }
 
-        tokenContract.claim(offerData.uid, offerReceiver.idType, offerReceiver.idValue, offerReceiver.subject);
+        tokenContract.claim(offerData.uid, offerReceiver.idValue, offerReceiver.subject);
 
         if (price == 0) {
             return;

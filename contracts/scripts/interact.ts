@@ -7,27 +7,33 @@ const RESET = "\x1b[0m";
 const GREEN = "\x1b[32m";
 
 async function main() {
-  const address = "0xB8d2BDd1C99A33b831553DA64F6215983bf0475a"; // Specify here your contract address
-  const contract = await hre.ethers.getContractAt("Greeter", address); // Specify here your contract name
+  const address = "0xaaD7fa952B710B6d93837f38Bbe908D2bdc0B97A"; // Specify here your contract address
+  const contract = await hre.ethers.getContractAt(
+    "SlnTokenClaimingDvp",
+    address,
+  ); // Specify here your contract name
 
   ////////////////
   //  PAYLOAD  //
   //////////////
 
-  const newGreeting = "Buongiorno!"; // Specify here the payload of the to-be-called function
+  // const newGreeting = "Buongiorno!"; // Specify here the payload of the to-be-called function
 
   ////////////////
   //  SENDING  //
   //////////////
 
-  const tx = await contract.setGreeting(newGreeting); // Specify here the to-be-called function name
-  console.log("The transaction hash is: " + `${GREEN}${tx.hash}${RESET}\n`);
-  console.log("Waiting until the transaction is confirmed...\n");
-  const receipt = await tx.wait(); // Wait until the transaction is confirmed
-  console.log(
-    "The transaction returned the following transaction receipt:\n",
-    receipt,
-  );
+  await contract.setAllowedAddress('0x851438Ecb37FAe596DcD49bDe643D170F3aa225B', true)
+
+  // const result = await contract.isAllowedAddress('0x851438Ecb37FAe596DcD49bDe643D170F3aa225B'); // Specify here the to-be-called function name
+  // console.log(result)
+  // console.log("The transaction hash is: " + `${GREEN}${result}${RESET}\n`);
+  // console.log("Waiting until the transaction is confirmed...\n");
+  // const receipt = await tx.wait(); // Wait until the transaction is confirmed
+  // console.log(
+  //   "The transaction returned the following transaction receipt:\n",
+  //   receipt,
+  // );
 }
 
 // To run it, invoke `npx hardhat run scripts/interact.ts --network <network_name>`

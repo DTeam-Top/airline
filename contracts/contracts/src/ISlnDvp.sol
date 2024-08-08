@@ -61,6 +61,4 @@ interface IClaimable {
     function totalClaimable() external view returns (uint);
 
     function setTotalClaimable(uint256 _totalClaimable) external;
-
-    function owner() external view returns (address);
 }

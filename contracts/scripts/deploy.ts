@@ -9,23 +9,28 @@ function delay(ms: number) {
 }
 
 async function main() {
-  const constructorArgs = ["Hello, Hardhat!"];
-  const contract = await hre.ethers.deployContract("Greeter", constructorArgs);
+  const constructorArgs = ["0xC2679fBD37d54388Ce493F1DB75320D236e1815e", "EAS Attestation", "1.2.0"];
+  const contract = await hre.ethers.deployContract(
+    "SlnTokenSellingDvp",
+    constructorArgs,
+  );
 
   await contract.waitForDeployment();
   const contractAddress = await contract.getAddress();
 
-  console.log("Greeter deployed to: " + `${GREEN}${contractAddress}${RESET}\n`);
-
   console.log(
-    "Waiting 30 seconds before beginning the contract verification to allow the block explorer to index the contract...\n",
+    "Contract deployed to: " + `${GREEN}${contractAddress}${RESET}\n`,
   );
-  await delay(30000); // Wait for 30 seconds before verifying the contract
 
-  await hre.run("verify:verify", {
-    address: contractAddress,
-    constructorArguments: constructorArgs,
-  });
+  // console.log(
+  //   "Waiting 30 seconds before beginning the contract verification to allow the block explorer to index the contract...\n",
+  // );
+  // await delay(30000); // Wait for 30 seconds before verifying the contract
+
+  // await hre.run("verify:verify", {
+  //   address: contractAddress,
+  //   constructorArguments: constructorArgs,
+  // });
 
   // Uncomment if you want to enable the `tenderly` extension
   // await hre.tenderly.verify({

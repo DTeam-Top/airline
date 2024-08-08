@@ -3,6 +3,5 @@
 // See also here: https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#complex-arguments
 
 // eslint-disable-next-line no-undef
-module.exports = [
-  "Hello, Hardhat!", // The example Greeter.sol file needs a string
-];
+// module.exports = ["TestERC721", "T721", 1000]; // 721
+module.exports = ["0xC2679fBD37d54388Ce493F1DB75320D236e1815e", "EAS Attestation", "1.2.0"]; // Dvp
