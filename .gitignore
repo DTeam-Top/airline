@@ -1,0 +1,14 @@
+dist
+circuits
+coverage
+node_modules
+.vscode
+[0-9]*/
+upload/
+reports
+.env
+.DS_Store
+demo
+eas-rs
+ethers-rs
+attestation-tiny-mvp-deprecated

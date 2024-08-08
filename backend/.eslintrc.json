@@ -1,0 +1,23 @@
+{
+  "extends": "./node_modules/gts/",
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "off",
+    "node/no-extraneous-import": [
+      "error",
+      {
+        "allowModules": ["pino"]
+      }
+    ],
+
+    "node/no-unpublished-import": [
+      "error",
+      {
+        "convertPath": [
+          {
+            "exclude": ["test/**/*.ts"]
+          }
+        ]
+      }
+    ]
+  }
+}
