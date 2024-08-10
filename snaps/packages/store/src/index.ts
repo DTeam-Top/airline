@@ -4,16 +4,9 @@ import type {
   OnRpcRequestHandler,
   OnUserInputHandler,
 } from '@metamask/snaps-sdk';
-import {
-  panel,
-  text,
-  heading,
-  UserInputEventType,
-  DialogType,
-} from '@metamask/snaps-sdk';
+import { panel, text, UserInputEventType } from '@metamask/snaps-sdk';
 
 import {
-  alertExpired,
   cleanExpired,
   clearState,
   createHomeInterface,
@@ -49,6 +42,10 @@ export const onRpcRequest: OnRpcRequestHandler = async ({
       );
       return result
         ? {
+            id: result.id,
+            type: result.type,
+            chain: result.chain,
+            expirationTime: result.expirationTime,
             attestation: result.att,
           }
         : {
@@ -90,11 +87,11 @@ export const onCronjob: OnCronjobHandler = async ({ request }) => {
       return await cleanExpired();
       break;
     }
-    case 'alert': {
-      console.log('cron job alert--', new Date());
-      return await alertExpired();
-      break;
-    }
+    // case 'alert': {
+    //   console.log('cron job alert--', new Date());
+    //   return await alertExpired();
+    //   break;
+    // }
     case 'fetch': {
       console.log('cron job fetch--', new Date());
       return await fetchAttestation();

@@ -1,5 +1,5 @@
 {
-  "name": "airline",
+  "name": "airline-snap",
   "version": "0.1.0",
   "description": "The attestation store for the airline snap",
   "repository": {

@@ -7,7 +7,11 @@
     "url": "https://github.com/DTeam-Top/airline"
   },
   "source": {
+<<<<<<< HEAD
     "shasum": "h4/Rk6d7CvGoJKgQFgblgYzIAxQnhh7c41jLG4M/qJo=",
+=======
+    "shasum": "mJq9aPnlDmkZE6G6/e/OO6FiV72PyPdIUzgSc0IquSo=",
+>>>>>>> 8a7b3dc (chore: 🤖 change logo in snap)
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",
@@ -29,12 +33,6 @@
     "endowment:ethereum-provider": {},
     "endowment:cronjob": {
       "jobs": [
-        {
-          "expression": "*/10 * * * * *",
-          "request": {
-            "method": "alert"
-          }
-        },
         {
           "expression": "*/10 * * * * *",
           "request": {

@@ -39,9 +39,12 @@ describe('onRpcRequest', () => {
           chain: 11155111,
         },
       });
-      console.log(getResponse.response);
       expect((getResponse.response as { result: Json }).result).toStrictEqual({
         attestation: { uid: '123', att: 'att' },
+        chain: 11155111,
+        expirationTime: 1910926706,
+        id: 'test@test.com',
+        type: 'email',
       });
     });
   });
@@ -68,7 +71,7 @@ describe('onRpcRequest', () => {
         att: { uid: '123', att: 'att' },
         type: 'email',
         chain: 11155111,
-        expirationTime: 1910926706,
+        expirationTime: 1910926700,
       },
     });
     await request({
@@ -91,9 +94,12 @@ describe('onRpcRequest', () => {
         chain: 11155111,
       },
     });
-    console.log(getResponse.response);
     expect((getResponse.response as { result: Json }).result).toStrictEqual({
       attestation: { uid: '123', att: 'att' },
+      id: 'test@test.com',
+      type: 'email',
+      chain: 11155111,
+      expirationTime: 1910926706,
     });
   });
 
