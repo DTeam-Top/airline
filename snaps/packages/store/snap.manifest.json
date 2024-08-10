@@ -4,14 +4,14 @@
   "proposedName": "Airline",
   "repository": {
     "type": "git",
-    "url": "https://github.com/DTeam-Top/airline.git"
+    "url": "https://github.com/DTeam-Top/airline"
   },
   "source": {
-    "shasum": "wFuyFzVVHHHzVoP+OJ8fWycmAwuOatNNY0OrrMb4X30=",
+    "shasum": "h4/Rk6d7CvGoJKgQFgblgYzIAxQnhh7c41jLG4M/qJo=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",
-        "packageName": "airline-snap",
+        "packageName": "airline",
         "registry": "https://registry.npmjs.org/",
         "iconPath": "images/logo.svg"
       }
