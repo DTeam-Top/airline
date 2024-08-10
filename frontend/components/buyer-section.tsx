@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { IFrameEthereumProvider } from "@ledgerhq/iframe-provider"
 import axios from "axios"
 import { ethers } from "ethers"
-import { useAtomValue, useSetAtom } from "jotai"
+import { useAtomValue } from "jotai"
 
 import {
     DVP_ABI,
@@ -21,7 +21,6 @@ import { useRequestSnap } from "@/lib/hooks/useRequestSnap"
 import { decodeRawData } from "@/lib/provider"
 import {
     getConfirmInstallSnapAtom,
-    setConfirmInstallSnapAtom,
 } from "@/lib/store/easAttestationsStore"
 import { Snap } from "@/lib/types/snap"
 import { prepareAttestation } from "@/lib/utils"
@@ -45,7 +44,7 @@ export const BuyerSection = () => {
     const [buyBtnHidden, setBuyBtnHidden] = useState(true)
     const [buyLoading, setBuyLoading] = useState(false)
     const [approveLoading, setApproveLoading] = useState(false)
-    const [approved, setApproved] = useState(false)
+    const [setApproved] = useState(false)
     const [error, setError] = useState("")
     const [txURL, settxURL] = useState("")
     const [open, setOpen] = useState(false)
@@ -56,7 +55,6 @@ export const BuyerSection = () => {
     const requestSnap = useRequestSnap()
     const invokeSnap = useInvokeSnap()
 
-    const setConfirmInstallSnap = useSetAtom(setConfirmInstallSnapAtom)
     const confirmInstallSnap = useAtomValue(getConfirmInstallSnapAtom)
     const [ethereum, setEthereum] = useState<any>(null)
 
@@ -65,7 +63,6 @@ export const BuyerSection = () => {
 
     useEffect(() => {
         if (typeof window !== "undefined" && !ethereum) {
-            console.log('$$########')
             let ethereumProvider = new IFrameEthereumProvider()
             setEthereum(ethereumProvider)
             ethereumProvider.send("page_ready")
@@ -76,7 +73,7 @@ export const BuyerSection = () => {
     useEffect(() => {
 
         const setAttestations = async (attestation: any) => {
-            const response = await invokeSnap({
+            await invokeSnap({
                 provider: ethereum,
                 method: "set",
                 params: {
@@ -87,7 +84,6 @@ export const BuyerSection = () => {
                     expirationTime: attestation.message.expirationTime,
                 },
             })
-            console.log(response)
         }
         if (typeof window !== "undefined" && ethereum) {
             window.addEventListener(
@@ -99,7 +95,6 @@ export const BuyerSection = () => {
                             setOfferAttestation(message.data.attestation)
                         } else if (message.data.type === "id-att") {
                             //get id attestation
-                            console.log("id Atttestation", message.data.attestation)
                             setAttestations(message.data.attestation)
                             setIdAttestation(message.data.attestation)
                             setOpen(message.data.display)
@@ -176,7 +171,6 @@ export const BuyerSection = () => {
         }
         if (ethereum && !loaded) {
             getMetaMaskInfo()
-            console.log("getMetaMaskInfo", isFlask, snapsDetected, installedSnap)
         }
     }, [ethereum, installedSnap, isFlask, snapsDetected, loaded])
 
@@ -185,13 +179,11 @@ export const BuyerSection = () => {
         setApproveLoading(true)
 
         const txHash = await approveERC20(ZERO_ADDRESS, price)
-        console.log("txHash---", txHash)
         const timer = setInterval(async () => {
             try {
-                const transaction = await ethereum.send("eth_getTransactionReceipt", [
+                await ethereum.send("eth_getTransactionReceipt", [
                     txHash,
                 ])
-                console.log(transaction)
 
                 setApproveLoading(false)
                 setApproved(true)
@@ -212,7 +204,7 @@ export const BuyerSection = () => {
             ],
             function: "approve",
         })
-        const result = await ethereum.send("eth_sendTransaction", [
+        return await ethereum.send("eth_sendTransaction", [
             {
                 from: walletAddress,
                 to: erc20Address,
@@ -220,14 +212,10 @@ export const BuyerSection = () => {
                 gasLimit: ethers.toBeHex(6000000),
             },
         ])
-
-        console.log(result)
-        return result
     }
 
     const verifyHandler = async () => {
         try {
-            console.log("verify---", new Date(), confirmInstallSnap, isFlask)
             let attestation
             if (confirmInstallSnap && isFlask) {
                 attestation = await getAttestations()
@@ -235,7 +223,7 @@ export const BuyerSection = () => {
                     //setConfirmInstallSnap(walletAddress, false)
                 } else {
                     if (attestation === NO_ATTESTATION) {
-                        // openAttestionDialog()
+                        openAttestionDialog()
                     } else {
                         setVerifyLoading(true)
                         setBuyBtnHidden(true)
@@ -245,10 +233,9 @@ export const BuyerSection = () => {
                     }
                 }
             } else {
-                //openAttestionDialog()
+                openAttestionDialog()
             }
         } catch (e: any) {
-            console.log(e.response)
             if (e.response && e.response.data) {
                 setError(e.response.data.message)
             } else {
@@ -267,8 +254,9 @@ export const BuyerSection = () => {
     }
 
     const getAttestations = async () => {
-        const result = await requestSnap(ethereum)
-        console.log("email--", result, email, installedSnap, isFlask, snapsDetected)
+        if (!installedSnap) {
+            const result = await requestSnap(ethereum)
+        }
 
         const response: any = await invokeSnap({
             provider: ethereum,
@@ -276,7 +264,6 @@ export const BuyerSection = () => {
             params: { id: email },
         })
 
-        console.log("response", response)
         return response?.attestation
     }
 
@@ -289,18 +276,7 @@ export const BuyerSection = () => {
                 const offerAttestationValue = prepareAttestation(offerAttestation)
                 const idAttestationValue = prepareAttestation(idAttestation)
 
-                console.log("offer--", offerAttestationValue)
-                console.log("id---", idAttestationValue)
-
                 const baseFee = await ethereum.send("eth_getBaseFeePerGas", [])
-                console.log("baseFee--", baseFee)
-                let feePriority = BigInt(10 * 1000_000_000)
-
-                if (baseFee && (baseFee * BigInt(13)) / BigInt(100) >= feePriority) {
-                    feePriority = (baseFee * BigInt(13)) / BigInt(100)
-                }
-                // // 200 GWEI
-                const maxGasPrice = 200 * 1000_000_000
 
                 let txHash
 
@@ -319,24 +295,14 @@ export const BuyerSection = () => {
                             data: encodeData,
                             value: ethers.toBeHex(ethers.parseUnits(price, 18).toString()),
                             gasLimit: ethers.toBeHex(600000),
-                            maxPriorityFeePerGas: ethers.toBeHex(feePriority),
-                            maxFeePerGas: ethers.toBeHex(maxGasPrice),
                         },
                     ])
 
-                    console.log(txHash)
                 } else {
-                    //   ts = await dvpContract.perform(offerAttestation, idAttestation, {
-                    //     gasLimit: 6000000,
-                    //     maxPriorityFeePerGas: feePriority,
-                    //     maxFeePerGas: maxGasPrice,
-                    //   })
+                    //   todo
                 }
 
-                console.log(
-                    "succeess!!!!",
-                    "https://mumbai.polygonscan.com/tx/" + txHash
-                )
+
                 detectTransaction(txHash)
             }
         } catch (e: any) {
@@ -359,7 +325,7 @@ export const BuyerSection = () => {
                 const transaction = await ethereum.send("eth_getTransactionReceipt", [
                     txHash,
                 ])
-                console.log(transaction)
+
                 settxURL(`${TX_ROOT}/tx/${txHash}`)
                 setBuyLoading(false)
                 clearInterval(timer)
@@ -419,7 +385,8 @@ export const BuyerSection = () => {
                         <div className="mt-4 flex justify-center gap-4">
                             <button
                                 className="hover:bg-Indigo-400 ring-offset-background focus-visible:ring-ring inline-flex h-12 w-40  items-center justify-center rounded-lg border bg-blue-400 px-4 py-2  text-lg font-medium text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-                                disabled={approved || approveLoading}
+                                disabled={true}
+                                // disabled={approved || approveLoading}
                                 onClick={() => approveHandler()}
                             >
                                 {approveLoading && <SpinLoading />}
@@ -446,13 +413,12 @@ export const BuyerSection = () => {
                     {error && <div className="mt-4 text-red-500">Error:{error}</div>}
                 </div>
             </div>
-            {/* <BuyerVerifyDialog ref={modalRef} /> */}
-            <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog open={open} onOpenChange={setOpen} title="">
                 <DialogContent className="w-[500px] gap-0 rounded-3xl rounded-b-none p-4 pt-14 sm:max-w-md sm:rounded-3xl sm:p-8">
                     <iframe
                         id="attIframe"
                         src={env.NEXT_PUBLIC_ATTESTATION_FRONTEND}
-                        className="h-[400px] w-[400px]"
+                        className="size-[400px]"
                     ></iframe>
                 </DialogContent>
             </Dialog>

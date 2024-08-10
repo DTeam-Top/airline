@@ -30,8 +30,6 @@ export const useRequestSnap = (
       },
     })) as Record<string, Snap>
 
-    console.log("snap--", snaps, snapId, version)
-
     // Updates the `installedSnap` context variable since we just installed the Snap.
     setInstalledSnap(snaps?.[snapId] ?? null)
   }

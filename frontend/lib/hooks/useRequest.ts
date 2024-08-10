@@ -30,7 +30,6 @@ export const useRequest = () => {
    */
   const request: Request = async ({ method, params, provider }) => {
     try {
-      console.log("method", method, provider)
       return (await provider?.send(method, params)) ?? null
     } catch (requestError: any) {
       //setError(requestError)

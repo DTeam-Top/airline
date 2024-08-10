@@ -29,10 +29,11 @@ export function SellerSection({ }: {}) {
     const [error, setError] = useState("")
     const [shareLink, setShareLink] = useState("")
     const [token, setToken] = useState(
-        "0x3490ffc64a4e65abb749317f7860e722ba65a2b5"
+        ""
         //"0x614cf3021705977c2ef4beb9d7f10a6bf4eaebf6" //smartcat
     )
-    const [id, setId] = useState("2665409553")
+    //0x3490ffc64a4e65abb749317f7860e722ba65a2b5
+    const [id, setId] = useState("")
     const blackList = [
         "2198416781",
         "3450203945",
@@ -43,7 +44,7 @@ export function SellerSection({ }: {}) {
         "309110477",
         "783788809",
     ]
-    const [receiver, setReceiver] = useState("weihong04271@163.com")
+    const [receiver, setReceiver] = useState("")
     const [erc20, setERC20] = useState(
         ZERO_ADDRESS // "0x3813e82e6f7098b9583fc0f33a962d02018b6803"
     )
@@ -68,14 +69,10 @@ export function SellerSection({ }: {}) {
             setShareLink("")
             setError("")
             const signature = await signAttestation(offer)
-            console.log(signature)
             const result = await createAttestation(signature, offer, scriptURI)
-            console.log(result.status)
-            console.log(result.data)
             setShareLink(
                 `${env.NEXT_PUBLIC_TSVIEWER}?chain=${env.NEXT_PUBLIC_CHAIN_ID}&contract=${result.data.attester}&tokenId=${result.data.uid}&viewType=sts-token`
             )
-            //`https://testnet.joyid.dev/evm-nft/${env.NEXT_PUBLIC_ATT_CHAIN_ID}/${result.data.attester}/${result.data.uid}`
             setSaleLoading(false)
         } catch (e: any) {
             setError(prepareError(e))
@@ -91,20 +88,17 @@ export function SellerSection({ }: {}) {
                     token,
                     id,
                     async (tx: any) => {
-                        console.log(tx.hash)
                         await provider.waitForTransaction(tx.hash, 1)
                         await isApproveAble()
                         setApproveLoading(false)
                     },
                     async (res: any) => {
-                        console.log("###")
+                        console.log(res)
                     }
                 )
             }
         } catch (e) {
             setApproveLoading(false)
-            //   showTxRefuseModal()
-            //   loading.approve = false
         }
     }
 
@@ -113,7 +107,6 @@ export function SellerSection({ }: {}) {
             try {
                 setApproveLoading(true)
                 isApproved(token, id, address).then((el: any) => {
-                    console.log("approve", el)
                     setApproved(el)
                     setApproveLoading(false)
                 })
@@ -142,7 +135,6 @@ export function SellerSection({ }: {}) {
     }
 
     const changeId = async (value: any) => {
-        console.log(value)
         if (blackList.indexOf(value) > -1) {
             setError("This token has been used!")
             return
@@ -164,7 +156,7 @@ export function SellerSection({ }: {}) {
             )
             setImage(result.data.image)
         }
-        if (id) {
+        if (id.length === 10) {
             isApproveAble()
             getMetadata(id)
         }
@@ -180,12 +172,12 @@ export function SellerSection({ }: {}) {
                                 <div className="mr-4 w-[100px]  text-right">Token:</div>
                                 <input
                                     name="token"
-                                    className="mb-2 h-10 w-[400px] border pl-2"
+                                    className=" h-10 w-[400px] border pl-2"
                                     value={token}
                                     onChange={(event) => setToken(event.target.value)}
                                 />
                             </div>
-                            <div>
+                            {/* <div>
                                 <a
                                     href="https://testnets.opensea.io/collection/smartcat-1"
                                     target="_blanck"
@@ -193,26 +185,27 @@ export function SellerSection({ }: {}) {
                                 >
                                     View NFT list
                                 </a>
-                            </div>
+                            </div> */}
                             <br />
                             <div className="flex items-center">
                                 <div className="mr-4 w-[100px] text-right">Id:</div>
                                 <input
                                     name="id"
-                                    className="mb-2 h-10 w-[400px] border pl-2"
+                                    className=" h-10 w-[400px] border pl-2"
                                     value={id}
                                     onChange={(event) => changeId(event.target.value)}
                                 />
                             </div>
                             <div className="mx-auto my-4  size-40">
-                                <img src={image} id="image" alt="preview" className="" />
+                                {image ? (<img src={image} id="image" alt="preview" className="" />) : (<>Loading...</>)}
+
                             </div>
                             <br />
                             <div className="flex items-center">
                                 <div className="mr-4 w-[100px]  text-right">Receiver:</div>
                                 <input
                                     name="receiver"
-                                    className="mb-2 h-10 w-[400px] border pl-2"
+                                    className=" h-10 w-[400px] border pl-2"
                                     value={receiver}
                                     onChange={(event) => setReceiver(event.target.value)}
                                 />
@@ -222,7 +215,7 @@ export function SellerSection({ }: {}) {
                                 <div className="mr-4 w-[100px]  text-right">ERC20:</div>
                                 <input
                                     name="erc20"
-                                    className="mb-2 h-10 w-[400px] border pl-2"
+                                    className=" h-10 w-[400px] border pl-2"
                                     value={erc20}
                                     onChange={(event) => setERC20(event.target.value)}
                                 />
@@ -232,7 +225,7 @@ export function SellerSection({ }: {}) {
                                 <div className="mr-4 w-[100px]  text-right">Price:</div>
                                 <input
                                     name="price"
-                                    className="mb-2 h-10 w-[400px] border pl-2"
+                                    className=" h-10 w-[400px] border pl-2"
                                     value={price}
                                     onChange={(event) => setPrice(event.target.value)}
                                 />

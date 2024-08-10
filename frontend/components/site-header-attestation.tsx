@@ -26,13 +26,12 @@ export function SiteHeaderAttestation({
     ...props
 }: Props) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-    const pathname = usePathname()
     const isMenuLightTheme = theme === "light"
 
     return (
         <header className={cn("w-full", { "bg-white": isMenuLightTheme })}>
             <nav
-                className="container flex h-[66px] items-center justify-between space-x-4 lg:h-[136px]"
+                className="container flex h-[40px] items-center justify-between space-x-4 lg:h-[100px]"
                 aria-label="Global"
             >
                 <HeaderLogo type={isMenuLightTheme ? "black" : "white"} />

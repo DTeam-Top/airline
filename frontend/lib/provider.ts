@@ -50,8 +50,6 @@ export async function signAttestation(offer: any) {
     ],
   }
 
-  console.log(domain, types, offer)
-
   return await signer.signTypedData(domain, types, offer)
 }
 
@@ -115,7 +113,6 @@ export async function approve(
       gasLimit: 6000000,
     })
   }
-  console.log(tx)
 
   committedHandler(tx)
 
@@ -159,22 +156,6 @@ async function executeContractMethodWithEstimatedGas(
   functionName: string,
   args: any
 ) {
-  console.log(contract.estimateGas)
-  //   const estimatedGas = new BigNumber(
-  //     ethersOf(
-  //       await contract.estimateGas[functionName](...args)
-  //         .then((value: any) => {
-  //           const minimumGas = BigInt("55000")
-  //           if (value.lt(minimumGas)) {
-  //             return minimumGas
-  //           }
-  //           return value
-  //         })
-  //         .catch((err: any) => {
-  //           return BigInt("650000")
-  //         })
-  //     )
-  //   )
   const argsForOverridden = args.pop()
   argsForOverridden.gasLimit = 650000 //parseEthers(estimatedGas.times(1.2).toString())
   args.push(argsForOverridden)

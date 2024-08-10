@@ -11,7 +11,6 @@ export const setEasAttestationsAtom = atom(
     if (address) {
       try {
       } catch (e: any) {
-        console.log(e.response.data)
         if (e.response.data && e.response.data.message === "not found") {
           set(easAttestationsAtom, [])
         }

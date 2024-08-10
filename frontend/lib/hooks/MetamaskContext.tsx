@@ -13,7 +13,6 @@ import { getSnapsProvider } from "../utils/metamask"
 type MetaMaskContextType = {
     provider: MetaMaskInpageProvider | null
     installedSnap: Snap | null
-    installedSnapB: Snap | null
     error: Error | null
     setInstalledSnap: (snap: Snap | null) => void
     setError: (error: Error) => void
@@ -22,7 +21,6 @@ type MetaMaskContextType = {
 export const MetaMaskContext = createContext<MetaMaskContextType>({
     provider: null,
     installedSnap: null,
-    installedSnapB: null,
     error: null,
     setInstalledSnap: () => {
         /* no-op */
