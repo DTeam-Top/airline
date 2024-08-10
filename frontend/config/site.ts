@@ -1,6 +1,7 @@
 export type SiteConfig = typeof siteConfig
 
 export const siteConfig = {
-  name: "Smart Layer",
-  description: "A token centric architecture for a token centric web",
+  name: "Airline",
+  description:
+    "An simple attestation and MM snap based token distribution service.",
 }

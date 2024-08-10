@@ -19,3 +19,24 @@ export const setEasAttestationsAtom = atom(
     }
   }
 )
+
+export const confirmInstallSnapAtom = atom<boolean>(true)
+export const getConfirmInstallSnapAtom = atom((get) =>
+  get(confirmInstallSnapAtom)
+)
+
+export const setConfirmInstallSnapAtom = atom(
+  null,
+  async (get, set, address: string | undefined, confirm: boolean) => {
+    if (address) {
+      try {
+        set(confirmInstallSnapAtom, confirm)
+      } catch (e: any) {
+        console.log(e.response.data)
+        if (e.response.data && e.response.data.message === "not found") {
+          set(confirmInstallSnapAtom, false)
+        }
+      }
+    }
+  }
+)

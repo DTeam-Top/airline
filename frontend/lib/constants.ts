@@ -80,23 +80,16 @@ export const ATT_TOKEN_PARAM = "att_token"
 export const IMPORTED_PASSES = "imported-passes"
 export const LOCAL_PASSES = "local-passes"
 
-export const DVP_CONTRACT_ADDRESS = "0xE7c7cC7b540Ad0095B694D7500BA84753E41182f" //sale contract
+export const DVP_CONTRACT_ADDRESS = "0xaaD7fa952B710B6d93837f38Bbe908D2bdc0B97A" //sale contract
 export const DVP_OFFERCONTRACT_ADDRESS =
   "0x9090c7EA1A694E694a7Cc8701C976375b507A2fB" //offer contract todo
+
 export const EAS_ADDRESS = "0xaEF4103A04090071165F78D45D83A0C0782c2B2a"
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 export const ERC20_ABI = [
   "function approve(address, uint256) external returns (bool)", //spender, value
   "function allowance(address, address) external view returns (uint256)", //owner, spender, output: allowance
   "function decimals() external pure returns (uint8)",
-]
-
-export const TOKEN_ABI = [
-  "function claimedById(string) view returns (bool)",
-  "function claimedByUid(bytes32 uid) public view returns (uint)",
-  "function claimed() public view returns (uint)",
-  "function totalClaimable() public view returns (uint)",
-  "event Transfer(address indexed from, address indexed to, uint256 indexed id)",
 ]
 
 export const IDAttestationDomain = {
@@ -114,7 +107,6 @@ export const types = {
 
 export const scriptURI = "" //for id attestation
 
-export const ID_TYPE_REDBRICK_WALLET = "redbrick-wallet"
 export const ID_TYPE_CAT_LOOT_HOLDER = "cat-loot-holder"
 
 export const ID_TYPE_EMAIL = "email"
@@ -123,3 +115,8 @@ export const DVP_ABI = [
 ]
 
 export const NOT_FOUND = "Account not found"
+export const NO_ATTESTATION = "no attestation"
+
+export const defaultSnapOrigin = env.NEXT_PUBLIC_SNAP_ORIGIN
+
+export const TX_ROOT = "https://sepolia.etherscan.io"

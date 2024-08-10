@@ -1,12 +1,10 @@
+import { decodeValue } from "@latticexyz/protocol-parser/internal"
 import BigNumber from "bignumber.js"
 import { ethers } from "ethers"
 
-import {
-  DVP_CONTRACT_ADDRESS,
-  DVP_OFFERCONTRACT_ADDRESS,
-  EAS_ADDRESS,
-} from "./constants"
+import { DVP_CONTRACT_ADDRESS, DVP_OFFERCONTRACT_ADDRESS } from "./constants"
 import { env } from "./env.mjs"
+import { rawDataSchemas } from "./types"
 
 export const ERC721_ABI = [
   "function approve(address, uint256) external returns (bool)", //to, tokenId
@@ -35,9 +33,9 @@ export async function signAttestation(offer: any) {
   const signer = await provider.getSigner()
 
   const domain = {
-    name: "Smart-Layer-Attestation-Service",
+    name: "EAS Attestation",
     chainId: env.NEXT_PUBLIC_CHAIN_ID,
-    version: "0.1",
+    version: "1.2.0",
     verifyingContract: DVP_CONTRACT_ADDRESS,
   }
 
@@ -74,7 +72,6 @@ export async function isApproved(
     console.error(errorMsg)
     return
   }
-  console.log(erc721Address)
   const erc721Contract = new ethers.Contract(
     erc721Address,
     ERC721_ABI,
@@ -215,91 +212,6 @@ export async function getDecimals(erc20: string) {
   return await new ethers.Contract(erc20, ERC20_ABI, provider).decimals()
 }
 
-export async function approveForClaim(
-  erc721Address: string,
-  committedHandler: any,
-  mintedHandler: any
-) {
-  if (!infuraProvider) {
-    console.error(errorMsg)
-    return
-  }
-  const signer = await provider.getSigner()
-  const erc721Contract = new ethers.Contract(erc721Address, ERC721_ABI, signer)
-  let tx
-  try {
-    tx = await erc721Contract.setApprovalForAll(DVP_OFFERCONTRACT_ADDRESS, {
-      gasLimit: 6000000,
-    })
-  } catch (error) {
-    console.log(error)
-    console.error("setApprovalForAll failed, try approve function.")
-
-    tx = await erc721Contract.approve(DVP_OFFERCONTRACT_ADDRESS, {
-      gasLimit: 6000000,
-    })
-  }
-  console.log(tx)
-
-  committedHandler(tx)
-
-  if (mintedHandler) {
-    mintedHandler(await provider.waitForTransaction(tx.hash, CONFIRMATIONS))
-  }
-}
-
-export async function isApprovedForClaim(erc721Address: string, owner: string) {
-  //todo
-  //   if (!provider) {
-  //     console.error(errorMsg)
-  //     return
-  //   }
-
-  //   const erc721Contract = new ethers.Contract(
-  //     erc721Address,
-  //     ERC721_ABI,
-  //     provider
-  //   )
-
-  //   try {
-  //     return await erc721Contract.isApprovedForAll(
-  //       owner,
-  //       DVP_OFFERCONTRACT_ADDRESS
-  //     )
-  //   } catch (error) {
-  //     console.error("isApprovedForAll failed, try getApproved function")
-
-  //     return (
-  //       (
-  //         await erc721Contract.getApproved(DVP_OFFERCONTRACT_ADDRESS)
-  //       ).toLowerCase() === DVP_OFFERCONTRACT_ADDRESS.toLowerCase()
-  //     )
-  //   }
-  return true
-}
-
-export async function signAttestationForClaim(offer: any) {
-  const signer = await provider.getSigner()
-
-  const domain = {
-    name: "EAS Attestation",
-    chainId: env.NEXT_PUBLIC_CHAIN_ID,
-    version: "1.2.0",
-    verifyingContract: DVP_OFFERCONTRACT_ADDRESS,
-  }
-  console.log(domain)
-
-  const types = {
-    Offer: [
-      { name: "token", type: "address" },
-      { name: "amount", type: "uint256" },
-      { name: "receiverIdType", type: "string" },
-      { name: "erc20", type: "address" },
-      { name: "price", type: "uint256" },
-    ],
-  }
-
-  console.log(domain, types, offer)
-
-  return await signer.signTypedData(domain, types, offer)
+export function decodeRawData(rawData: `0x${string}`) {
+  return decodeValue(rawDataSchemas.saleOffer, rawData)
 }
