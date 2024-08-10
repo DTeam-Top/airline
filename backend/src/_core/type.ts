@@ -1,19 +1,18 @@
-import {Cradle} from '@fastify/awilix';
-import {AwilixContainer} from 'awilix';
-import {RouteHandlerMethod, RouteShorthandOptions} from 'fastify';
-import {SiweMessage} from 'siwe';
+import { Cradle } from "@fastify/awilix";
+import { AwilixContainer } from "awilix";
+import { RouteHandlerMethod, RouteShorthandOptions } from "fastify";
 
 export type Action = {
   path: string;
   method:
-    | 'get'
-    | 'head'
-    | 'post'
-    | 'put'
-    | 'delete'
-    | 'options'
-    | 'patch'
-    | 'all';
+    | "get"
+    | "head"
+    | "post"
+    | "put"
+    | "delete"
+    | "options"
+    | "patch"
+    | "all";
   options?: RouteShorthandOptions;
   handler: RouteHandlerMethod;
 };
@@ -23,7 +22,7 @@ export type Controller = {
   actions: Action[];
 };
 
-type HttpMethodLimited = 'get' | 'post' | 'put' | 'delete';
+type HttpMethodLimited = "get" | "post" | "put" | "delete";
 
 export type SecurityFilterRule = {
   pattern: RegExp;
@@ -35,19 +34,11 @@ export type JobHandler = (
   fireDate: Date
 ) => void | Promise<any>;
 
-declare module 'fastify' {
-  interface Session {
-    siwe?: {
-      nonce?: string;
-      message?: SiweMessage;
-    };
-  }
-
-  interface FastifyRequest {
-    user?: {
-      name: string;
-      loginMethod: string;
-      loginInfo: any;
-    };
-  }
-}
+// declare module 'fastify' {
+//   interface Session {
+//     siwe?: {
+//       nonce?: string;
+//       message?: SiweMessage;
+//     };
+//   }
+// }

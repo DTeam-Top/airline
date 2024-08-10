@@ -1,46 +1,18 @@
 import {
-  createIdAttestationAction,
-  getAttestation,
-  getAttestationByDecoded,
+  createIdAttestAction,
+  createSellingOffer,
   getAttestationRawdata,
-  getIdAttestationsStatus,
-  getIssuersByRecipient,
-  listAttestations,
-  listIdAttestations,
-  uploadingAttestation,
-} from './actions/attestationAction';
-import {createOtp} from './actions/secretAction';
-import {Controller, SecurityFilterRule} from './_core/type';
+} from "./actions/attestationAction";
+
+import { Controller, SecurityFilterRule } from "./_core/type";
 
 export const controllers: Controller[] = [
   {
-    prefix: 'attestations',
-    actions: [
-      getAttestation,
-      listAttestations,
-      uploadingAttestation,
-      getAttestationByDecoded,
-      createIdAttestationAction,
-      getIssuersByRecipient,
-      listIdAttestations,
-      getIdAttestationsStatus,
-      getAttestationRawdata,
-    ],
-  },
-  {
-    prefix: "offers",
-    actions: [
-      createSellingOffer,
-      createClaimingOffer,
-      createDelivery,
-      createIdAttestAction,
-      getAttestationRawdata,
-    ],
-  },
-  {
-    prefix: 'secret',
-    actions: [createOtp],
+    prefix: "attestations",
+    actions: [createSellingOffer, createIdAttestAction, getAttestationRawdata],
   },
 ];
 
-export const securityRules: SecurityFilterRule[] = [];
+export const securityRules: SecurityFilterRule[] = [
+  { pattern: /^\/attestations/ },
+];

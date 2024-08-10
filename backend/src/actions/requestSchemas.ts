@@ -1,4 +1,4 @@
-import {z} from 'zod';
+import { z } from "zod";
 
 export const sellingOfferPostSchema = z.object({
   offer: z.object({
@@ -14,20 +14,6 @@ export const sellingOfferPostSchema = z.object({
   scriptURI: z.string(),
 });
 export type SellingOfferRequest = z.infer<typeof sellingOfferPostSchema>;
-
-export const claimingOfferPostSchema = z.object({
-  offer: z.object({
-    token: z.string(),
-    amount: z.string(),
-    receiverIdType: z.enum(["email", "redbrick-wallet", "cat-loot-holder"]),
-    erc20: z.string(),
-    price: z.string(),
-  }),
-  dvp: z.string(),
-  signature: z.string(),
-  scriptURI: z.string(),
-});
-export type ClaimingOfferRequest = z.infer<typeof claimingOfferPostSchema>;
 
 export const attestIdPostSchema = z.object({
   id: z.object({
@@ -49,6 +35,12 @@ export const deliveryPostSchema = z
   .merge(attestIdPostSchema);
 export type DeliveryRequest = z.infer<typeof deliveryPostSchema>;
 
+export const otpSecretPostSchema = z.object({
+  otpType: z.literal("email"),
+  target: z.string(),
+});
+export type OtpSecretRequest = z.infer<typeof otpSecretPostSchema>;
+
 export const rawdataRequestSchema = z.object({
   attester: z.string(),
   tokenId: z.string(),
@@ -62,32 +54,3 @@ export const verifyWalletPostSchema = z.object({
 });
 
 export type VerifyWalletRequest = z.infer<typeof verifyWalletPostSchema>;
-
-export const postAttestationSchema = z.object({
-  by: z.literal('attester').or(z.literal('subject')),
-  signature: z.string(),
-  attestation: z.string(),
-  message: z.string(),
-});
-export type PostAttestation = z.infer<typeof postAttestationSchema>;
-
-export const attestIdPostSchema = z.object({
-  id: z.object({
-    idType: z.literal('email'),
-    value: z.string(),
-    secret: z.string().optional(),
-  }),
-  idSignature: z.string(),
-  signature: z.string(), //for auth
-  scriptURI: z.string().default(''),
-  expireTime: z.number(),
-  message: z.string().optional(), //for auth
-  receiver: z.string(),
-});
-export type AttestIdRequest = z.infer<typeof attestIdPostSchema>;
-
-export const otpSecretPostSchema = z.object({
-  otpType: z.literal('email'),
-  target: z.string(),
-});
-export type OtpSecretRequest = z.infer<typeof otpSecretPostSchema>;

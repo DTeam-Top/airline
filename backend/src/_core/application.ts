@@ -1,69 +1,61 @@
-import {Cradle, diContainer, fastifyAwilixPlugin} from '@fastify/awilix';
-import fastifyCookie from '@fastify/cookie';
-import cors from '@fastify/cors';
-import helmet from '@fastify/helmet';
-import passport from '@fastify/passport';
-import fastifySession, {FastifySessionOptions} from '@fastify/session';
-import fastifySwagger from '@fastify/swagger';
-import fastifySwaggerUI from '@fastify/swagger-ui';
-import {
-  asClass,
-  asValue,
-  AwilixContainer,
-  Lifetime,
-  NameAndRegistrationPair,
-} from 'awilix';
-import fastify, {FastifyInstance} from 'fastify';
-import fastifyRawBody from 'fastify-raw-body';
+import { Cradle, diContainer, fastifyAwilixPlugin } from "@fastify/awilix";
+import fastifyCookie from "@fastify/cookie";
+import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
+import fastifyJWT from "@fastify/jwt";
+import fastifySession from "@fastify/session";
+import fastifySwagger from "@fastify/swagger";
+import fastifySwaggerUI from "@fastify/swagger-ui";
+import { AwilixContainer, NameAndRegistrationPair } from "awilix";
+import fastify, { FastifyInstance } from "fastify";
+import fastifyRawBody from "fastify-raw-body";
 import {
   jsonSchemaTransform,
   serializerCompiler,
   validatorCompiler,
   ZodTypeProvider,
-} from 'fastify-type-provider-zod';
-import * as schedule from 'node-schedule';
+} from "fastify-type-provider-zod";
+import * as schedule from "node-schedule";
 import {
   RecurrenceRule,
   RecurrenceSpecDateRange,
   RecurrenceSpecObjLit,
-} from 'node-schedule';
-import {useOauth} from '../actions/auth';
-import {env} from '../env';
-import {API_INFO, LOGGER, LOGO} from './constant';
-import {health} from './controller/actions/health';
-import {
-  getNonce,
-  personalInformation,
-  signIn,
-} from './controller/actions/siweAction';
-import {buildRoutes} from './controller/route';
-import {DbService, PgOptions} from './services/dbService';
-import {Controller, JobHandler, SecurityFilterRule} from './type';
+} from "node-schedule";
+import { env } from "../env";
+import { API_INFO, LOGGER, LOGO } from "./constant";
+import { health } from "./controller/actions/health";
+// import {
+//   getNonce,
+//   personalInformation,
+//   signIn,
+// } from "./controller/actions/siweAction";
+import { buildRoutes } from "./controller/route";
+import { Controller, JobHandler, SecurityFilterRule } from "./type";
 
 const predefinedCtls: Controller[] = [
   {
-    prefix: '/health',
-    actions: [{path: '/', method: 'get', handler: health}],
+    prefix: "/health",
+    actions: [{ path: "/", method: "get", handler: health }],
   },
 ];
 
 const siweCtls: Controller[] = [
   {
-    prefix: '/',
+    prefix: "/",
     actions: [
-      {path: '/nonce', method: 'get', handler: getNonce},
-      {path: '/sign-in', method: 'post', handler: signIn},
-      {
-        path: '/personal-information',
-        method: 'get',
-        handler: personalInformation,
-      },
+      //   { path: "/nonce", method: "get", handler: getNonce },
+      //   { path: "/sign-in", method: "post", handler: signIn },
+      //   {
+      //     path: "/personal-information",
+      //     method: "get",
+      //     handler: personalInformation,
+      //   },
     ],
   },
 ];
 
 export class Application {
-  private server: FastifyInstance;
+  private server?: FastifyInstance;
   private diContainer: AwilixContainer<Cradle>;
 
   private ctls: Controller[] = [];
@@ -71,18 +63,6 @@ export class Application {
 
   constructor() {
     this.diContainer = diContainer;
-
-    this.server = fastify({
-      logger: LOGGER,
-      disableRequestLogging: env.NODE_ENV === 'mainnet',
-      trustProxy: true,
-      bodyLimit: 10485760, // 10 MiB
-    });
-  }
-
-  withSession(options?: FastifySessionOptions) {
-    this.server.register(fastifyCookie).register(fastifySession, options);
-    return this;
   }
 
   controllers(value: Controller[]) {
@@ -95,16 +75,16 @@ export class Application {
     return this;
   }
 
-  pgOpts(value: PgOptions) {
-    this.diContainer.register({
-      pgOpts: asValue(value),
-      dbService: asClass(DbService, {
-        lifetime: Lifetime.SINGLETON,
-        dispose: module => module.dispose(),
-      }),
-    });
-    return this;
-  }
+  //   pgOpts(value: PgOptions) {
+  //     this.diContainer.register({
+  //       pgOpts: asValue(value),
+  //       dbService: asClass(DbService, {
+  //         lifetime: Lifetime.SINGLETON,
+  //         dispose: (module) => module.dispose(),
+  //       }),
+  //     });
+  //     return this;
+  //   }
 
   resolve<T>(name: string) {
     return this.diContainer.resolve<T>(name);
@@ -120,18 +100,19 @@ export class Application {
   }
 
   build() {
-    useOauth('github');
-    useOauth('twitter');
-    useOauth('discord');
+    this.server = fastify({
+      logger: LOGGER,
+      disableRequestLogging: env.NODE_ENV === "prod",
+      trustProxy: true,
+      bodyLimit: 10485760, // 10 MiB
+    });
 
     this.server.setValidatorCompiler(validatorCompiler);
     this.server.setSerializerCompiler(serializerCompiler);
 
     this.server
       .withTypeProvider<ZodTypeProvider>()
-      .register(helmet, {global: true})
-      .register(passport.initialize())
-      .register(passport.secureSession())
+      .register(helmet, { global: true })
       .register(fastifySwagger, {
         openapi: {
           info: API_INFO,
@@ -139,15 +120,24 @@ export class Application {
           components: {
             securitySchemes: {
               jwt: {
-                type: 'http',
-                scheme: 'bearer',
+                type: "http",
+                scheme: "bearer",
               },
             },
           },
         },
         transform: jsonSchemaTransform,
       })
-      .register(cors, {credentials: true, origin: true})
+      .register(cors, { credentials: true, origin: true })
+      .register(fastifyCookie)
+      .register(fastifySession, {
+        secret: env.SESSION_SECRET,
+        cookie: { secure: false },
+      })
+      .register(fastifyJWT, {
+        secret: env.JWT_SECRET,
+        decoratorName: "jwt-user",
+      })
       .register(fastifyRawBody, {
         global: false,
         runFirst: true,
@@ -157,7 +147,7 @@ export class Application {
         disposeOnResponse: false,
       })
       .register(fastifySwaggerUI, {
-        routePrefix: '/documentation',
+        routePrefix: "/documentation",
         uiConfig: {
           persistAuthorization: true,
         },
@@ -168,7 +158,7 @@ export class Application {
           this.secRules
         )
       )
-      .after(err => {
+      .after((err) => {
         if (err) {
           console.log(`register plugins failed: ${err.message}`);
           throw err;
@@ -177,101 +167,21 @@ export class Application {
       .ready()
       .then(
         () => {
-          LOGGER.info('Server successfully booted!');
+          LOGGER.info("Server successfully booted!");
         },
-        err => {
-          LOGGER.trace('Server start error', err);
+        (err) => {
+          LOGGER.trace("Server start error", err);
         }
       );
-
-    this.server.get(
-      '/auth/github/login',
-      passport.authenticate('github', {scope: ['user:email']})
-    );
-    this.server.get(
-      '/auth/github/callback',
-      passport.authenticate(
-        'github',
-        {
-          failureRedirect: '/login',
-        },
-        async (request, reply, err, user) => {
-          const error = (request.query as any).error;
-          console.log('##', error);
-          if (error === 'access_denied') {
-            reply.redirect(env.ROOT_URL_PREFIX + `/create/github?error=1003`);
-          }
-          if (user) {
-            reply.redirect(
-              env.ROOT_URL_PREFIX + `/create/github?access_token=${user}`
-            );
-          } else {
-            reply.redirect(env.ROOT_URL_PREFIX + `/create/github?error=1004`);
-          }
-        }
-      )
-    );
-
-    this.server.get(
-      '/auth/discord/login',
-      passport.authenticate('discord', {scope: ['identify', 'email']})
-    );
-    this.server.get(
-      '/auth/discord/callback',
-      passport.authenticate(
-        'discord',
-        {
-          failureRedirect: '/login',
-        },
-        async (request, reply, err, user) => {
-          const error = (request.query as any).error;
-          if (error === 'access_denied') {
-            reply.redirect(env.ROOT_URL_PREFIX + `/create/discord?error=1003`);
-          }
-          if (user) {
-            reply.redirect(
-              env.ROOT_URL_PREFIX + `/create/discord?access_token=${user}`
-            );
-          } else {
-            reply.redirect(env.ROOT_URL_PREFIX + `/create/discord?error=1004`);
-          }
-        }
-      )
-    );
-
-    this.server.get(
-      '/auth/twitter/login',
-      passport.authenticate('twitter', {scope: ['tweet.read', 'users.read']})
-    );
-    this.server.get(
-      '/auth/twitter/callback',
-      passport.authenticate(
-        'twitter',
-        {
-          failureRedirect: '/login',
-        },
-        async (request, reply, err, user) => {
-          const error = (request.query as any).error;
-          (request as any).session.destroy();
-          if (error === 'access_denied') {
-            reply.redirect(env.ROOT_URL_PREFIX + `/create/twitter?error=1003`);
-          }
-          if (user) {
-            reply.redirect(
-              env.ROOT_URL_PREFIX + `/create/twitter?access_token=${user}`
-            );
-          } else {
-            reply.redirect(env.ROOT_URL_PREFIX + `/create/twitter?error=1004`);
-          }
-        }
-      )
-    );
     return this.server;
   }
 
-  async start(port = 3006, host = '127.0.0.1') {
-    this.build();
-    await this.server.listen({port, host});
+  async start(port = 3006, host = "127.0.0.1") {
+    if (!this.server) {
+      this.server = this.build();
+    }
+
+    await this.server.listen({ port, host });
 
     console.info(LOGO);
     this.server.log.info(`🚀 Server running on port ${port}`);
@@ -290,7 +200,7 @@ export class Application {
       | number,
     handler: JobHandler
   ) {
-    schedule.scheduleJob(rule, fireDate => {
+    schedule.scheduleJob(rule, (fireDate) => {
       handler(this.diContainer, fireDate);
     });
     return this;

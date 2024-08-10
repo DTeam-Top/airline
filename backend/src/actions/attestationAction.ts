@@ -1,198 +1,144 @@
-import {verifyMessage} from 'ethers';
-import {FastifyInstance, FastifyReply, FastifyRequest} from 'fastify';
-import {z} from 'zod';
-import {MAX_LIMIT, SUPPORT_TYPES} from '../constant';
+import { ethers } from "ethers";
+import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { Action } from "../_core/type";
+import { SCHEMAS, serverWallet } from "../constant";
+import { env } from "../env";
 import {
-  createIdAttestation,
-  getAttester,
-  getEasAttestationByAttester,
-  getEasAttestationByDecoded,
-  getEasAttestationRawDataByAttester,
-  getIdAttestationsByType,
-  getIdStatus,
-  getIssuerByRecipient,
-  listAttestationsByAttester,
-  listAttestationsByAttesterAndSubject,
-  listAttestationsBySubject,
-  normalize,
-  saveAttestation,
+  createAndUploadSellingOffserAttestation,
   verifyIdSignature,
-} from '../services/easAttestationService';
-import {verifySecret} from '../services/idSecretService';
-import {DbService} from '../_core/services/dbService';
-import {Action} from '../_core/type';
+  verifyOfferForSellingSignature,
+} from "../services/easAttestationService";
+import { getApproved, ownerOf } from "../services/ethersService";
 import {
-  attestIdPostSchema,
+  createIdAttest,
+  findByDecoded,
+  getRawdata,
+} from "../services/externalApi";
+import {
   AttestIdRequest,
-  PostAttestation,
-  postAttestationSchema,
-} from './requestSchemas';
-export const getAttestation: Action = {
-  path: '/:attester/:tokenId',
-  method: 'get',
+  SellingOfferRequest,
+  attestIdPostSchema,
+  rawdataRequestSchema,
+  sellingOfferPostSchema,
+} from "./requestSchemas";
+
+export const createSellingOffer: Action = {
+  path: "/selling-offers",
+  method: "post",
   options: {
     schema: {
-      params: z.object({
-        attester: z.string(),
-        tokenId: z.string(),
-      }),
+      body: sellingOfferPostSchema,
     },
   },
-  handler: getAttestationHandler,
+  handler: createSellingOfferHandler,
 };
 
-async function getAttestationHandler(
+async function createSellingOfferHandler(
   this: FastifyInstance,
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const {attester, tokenId} = request.params as {
-    attester: string;
-    tokenId: string;
-  };
+  const data = request.body as SellingOfferRequest;
+  const seller = verifyOfferForSellingSignature(
+    data.dvp,
+    data.offer,
+    data.signature
+  );
+  const owner = await ownerOf(data.offer.token, data.offer.id);
+  if (owner !== seller) {
+    reply.status(401).send({ message: `This nft is not owned by you` });
+    return;
+  }
 
-  const dbService: DbService = this.diContainer.resolve('dbService');
-  const attestation = await getEasAttestationByAttester(
-    dbService,
-    attester,
-    tokenId
+  // verify dvp contract == new contract(token, nftAbi).getApproved(id)
+  const isApproved = await getApproved(
+    seller,
+    data.offer.token,
+    data.offer.id,
+    data.dvp
   );
 
-  if (!attestation) {
-    await reply.status(404).send({message: 'not found'});
+  if (!isApproved) {
+    reply.status(400).send({ message: "Not approved" });
     return;
   }
+  // verify there is no duplicate in db, findByDecoded({token, id, schemaId})
+  const wallet = new ethers.Wallet(env.ATTESTER_SK);
+  const message = `${data.offer.id}-${JSON.stringify(data.offer.token)}`;
+  const signature = await wallet.signMessage(message);
 
-  return attestation;
+  const attestation = await findByDecoded(
+    data.offer.token,
+    data.offer.id,
+    SCHEMAS!.offerForSelling[1],
+    message,
+    signature
+  );
+
+  if (attestation.data) {
+    //reply.status(400).send({ message: "duplicate" });
+
+    return { attester: attestation.data.attester, uid: attestation.data.uid };
+  }
+
+  const result = await createAndUploadSellingOffserAttestation(
+    data,
+    seller,
+    data.scriptURI
+  );
+  return { attester: result.data.attester, uid: result.data.uid };
 }
 
-export const listAttestations: Action = {
-  path: '',
-  method: 'get',
+export const createIdAttestAction: Action = {
+  path: "/id",
+  method: "post",
   options: {
     schema: {
-      querystring: z.object({
-        attester: z.string().optional(),
-        subject: z.string().optional(),
-        startAt: z.coerce.number().default(0),
-        max: z.coerce.number().default(MAX_LIMIT),
-      }),
+      body: attestIdPostSchema,
     },
   },
-  handler: listAttestationsHandler,
+  handler: createIdAttestHandler,
 };
 
-async function listAttestationsHandler(
+async function createIdAttestHandler(
   this: FastifyInstance,
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  let {attester, subject, startAt, max} = request.query as {
-    attester?: string;
-    subject?: string;
-    startAt: number;
-    max: number;
-  };
+  const data = request.body as AttestIdRequest;
 
-  max = Math.min(MAX_LIMIT, max);
+  const receiver = verifyIdSignature(data.id, data.signature);
 
-  if (!attester && !subject) {
-    await reply
-      .status(400)
-      .send({message: 'at least one of attester or subject is required'});
+  if (receiver !== data.receiver) {
+    reply.status(401).send({ message: "Invalid signature" });
     return;
   }
 
-  const dbService: DbService = this.diContainer.resolve('dbService');
-  let attestations: any[] = [];
-
-  if (attester && subject) {
-    attestations = await listAttestationsByAttesterAndSubject(
-      dbService,
-      attester,
-      subject,
-      startAt,
-      max
+  try {
+    const result = await createIdAttest(
+      data.id,
+      data.signature,
+      data.expireTime,
+      await serverWallet.signMessage(JSON.stringify(data.id)),
+      data.receiver
     );
-  } else if (subject) {
-    attestations = await listAttestationsBySubject(
-      dbService,
-      subject,
-      startAt,
-      max
-    );
-  } else if (attester) {
-    attestations = await listAttestationsByAttester(
-      dbService,
-      attester,
-      startAt,
-      max
-    );
-  }
 
-  if (!attestations.length) {
-    await reply.status(404).send({message: 'not found'});
-    return;
-  }
-
-  return attestations;
-}
-
-export const uploadingAttestation: Action = {
-  path: '',
-  method: 'post',
-  options: {
-    schema: {
-      body: postAttestationSchema,
-    },
-  },
-  handler: uploadingAttestationHandler,
-};
-
-async function uploadingAttestationHandler(
-  this: FastifyInstance,
-  request: FastifyRequest,
-  reply: FastifyReply
-) {
-  const data = request.body as PostAttestation;
-  const offchainAttestation = normalize(JSON.parse(data.attestation));
-  const account = verifyMessage(data.attestation, data.signature);
-
-  if (data.by === 'attester') {
-    if (getAttester(offchainAttestation) !== account) {
-      await reply
-        .status(400)
-        .send({message: 'only attester or recipient can upload attestations.'});
-      return;
+    reply.status(201).send(result.data.rawData);
+  } catch (e: any) {
+    if (e.response && e.response.data) {
+      reply.status(500).send(e.response.data);
+    } else {
+      reply.status(500).send({ message: e.message });
     }
-  } else if (data.by === 'subject') {
-    if (offchainAttestation.message.recipient !== account) {
-      await reply
-        .status(400)
-        .send({message: 'only attester or recipient can upload attestations.'});
-      return;
-    }
-  } else {
-    await reply.status(400).send({message: 'invalid "by"'});
-    return;
   }
-
-  const dbService: DbService = this.diContainer.resolve('dbService');
-
-  return await saveAttestation(dbService, offchainAttestation);
 }
 
 export const getAttestationRawdata: Action = {
-  path: '/:attester/:tokenId/:chain/rawdata',
-  method: 'get',
+  path: "/:attester/:tokenId/:chain/rawdata",
+  method: "get",
   options: {
     schema: {
-      params: z.object({
-        attester: z.string(),
-        tokenId: z.string(),
-        chain: z.string(),
-      }),
-      querystring: z.object({message: z.string(), signature: z.string()}),
+      params: rawdataRequestSchema,
     },
   },
   handler: getAttestationRawDataHandler,
@@ -203,213 +149,33 @@ async function getAttestationRawDataHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const {attester, tokenId, chain} = request.params as {
+  const { attester, tokenId, chain } = request.params as {
     attester: string;
     tokenId: string;
     chain: string;
   };
 
-  const dbService: DbService = this.diContainer.resolve('dbService');
-  const attestation = await getEasAttestationRawDataByAttester(
-    dbService,
-    attester,
-    tokenId,
-    chain
-  );
-
-  if (!attestation) {
-    await reply.status(404).send({message: 'not found'});
-    return;
-  }
-
-  return attestation;
-}
-
-export const getAttestationByDecoded: Action = {
-  path: '/:token/:tokenId/:schema',
-  method: 'get',
-  options: {
-    schema: {
-      params: z.object({
-        token: z.string(),
-        tokenId: z.string(),
-        schema: z.string(),
-      }),
-      querystring: z.object({message: z.string(), signature: z.string()}),
-    },
-  },
-  handler: getAttestationByDecodedHandler,
-};
-
-async function getAttestationByDecodedHandler(
-  this: FastifyInstance,
-  request: FastifyRequest,
-  reply: FastifyReply
-) {
-  const {token, tokenId, schema} = request.params as {
-    token: string;
-    tokenId: string;
-    schema: string;
-  };
-
-  const dbService: DbService = this.diContainer.resolve('dbService');
-  const attestation = await getEasAttestationByDecoded(
-    dbService,
-    schema,
-    token,
-    tokenId
-  );
-
-  return attestation;
-}
-
-export const createIdAttestationAction: Action = {
-  path: '/id',
-  method: 'post',
-  options: {
-    schema: {
-      body: attestIdPostSchema,
-    },
-  },
-  handler: createIdAttestationHandler,
-};
-
-async function createIdAttestationHandler(
-  this: FastifyInstance,
-  request: FastifyRequest,
-  reply: FastifyReply
-) {
-  const data = request.body as AttestIdRequest;
-  const dbService: DbService = this.diContainer.resolve('dbService');
-  console.log(data);
-
-  if (data.id.idType === 'email' && data.id.secret) {
-    const secretVerified = await verifySecret(
-      dbService,
-      'email',
-      data.id.value,
-      Number(data.id.secret)
+  const wallet = new ethers.Wallet(env.ATTESTER_SK);
+  const message = `${attester}-${tokenId}`;
+  const signature = await wallet.signMessage(message);
+  try {
+    const attestation = await getRawdata(
+      attester,
+      tokenId,
+      message,
+      signature,
+      chain
     );
 
-    if (!secretVerified) {
-      reply.status(401).send({message: 'OTP not match'});
+    if (!attestation || !attestation.data) {
+      reply.status(404).send({ message: "Not found" });
       return;
     }
-  }
 
-  if (data.idSignature !== 'validated') {
-    const receiver = verifyIdSignature(data.id, data.idSignature);
-    console.log('receiver', receiver, data.receiver);
-    if (receiver !== data.receiver) {
-      reply.status(401).send({message: 'Invalid signature'});
-      return;
-    }
-  }
-
-  const attestation = await createIdAttestation(
-    data.id.idType,
-    data.id.value,
-    data.receiver,
-    data.scriptURI,
-    data.expireTime
-  );
-
-  return await saveAttestation(dbService, attestation);
-}
-
-export const getIssuersByRecipient: Action = {
-  path: '/:recipient',
-  method: 'get',
-  options: {
-    schema: {
-      params: z.object({
-        recipient: z.string(),
-      }),
-    },
-  },
-  handler: getIssuersByRecipientHandler,
-};
-
-async function getIssuersByRecipientHandler(
-  this: FastifyInstance,
-  request: FastifyRequest,
-  reply: FastifyReply
-) {
-  const {recipient} = request.params as {
-    recipient: string;
-  };
-
-  const dbService: DbService = this.diContainer.resolve('dbService');
-  const attestation = await getIssuerByRecipient(dbService, recipient);
-
-  return attestation;
-}
-
-export const listIdAttestations: Action = {
-  path: '/ids/:type',
-  method: 'get',
-  options: {
-    schema: {
-      params: z.object({
-        type: z.string(),
-      }),
-      querystring: z.object({
-        startAt: z.coerce.number().default(0),
-        max: z.coerce.number().default(MAX_LIMIT),
-      }),
-    },
-  },
-  handler: listIdAttestationsHandler,
-};
-
-async function listIdAttestationsHandler(
-  this: FastifyInstance,
-  request: FastifyRequest,
-  reply: FastifyReply
-) {
-  const {type} = request.params as {
-    type: string;
-  };
-
-  let {startAt, max} = request.query as {
-    startAt: number;
-    max: number;
-  };
-
-  max = Math.min(MAX_LIMIT, max);
-
-  if (SUPPORT_TYPES.indexOf(type) === -1) {
-    await reply.status(400).send({message: `${type} not supported`});
+    reply.status(201).send(attestation.data);
+  } catch (e: any) {
+    console.log(e);
+    reply.status(404).send({ message: e.message });
     return;
   }
-
-  const dbService: DbService = this.diContainer.resolve('dbService');
-  const attestation = await getIdAttestationsByType(
-    dbService,
-    type,
-    startAt,
-    max
-  );
-
-  return attestation;
-}
-
-export const getIdAttestationsStatus: Action = {
-  path: '/ids/status',
-  method: 'get',
-  options: {
-    schema: {},
-  },
-  handler: getIdAttestationsStatusHandler,
-};
-
-async function getIdAttestationsStatusHandler(
-  this: FastifyInstance,
-  request: FastifyRequest,
-  reply: FastifyReply
-) {
-  const dbService: DbService = this.diContainer.resolve('dbService');
-  const result = await getIdStatus(dbService);
-
-  return result;
 }

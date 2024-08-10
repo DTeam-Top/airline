@@ -1,6 +1,6 @@
-import {SecurityFilterRule} from '../type';
+import { SecurityFilterRule } from "../type";
 
-const methodsLimited = ['get', 'post', 'put', 'delete'];
+const methodsLimited = ["get", "post", "put", "delete"];
 
 export function applyRules(
   url: string,
@@ -16,7 +16,7 @@ export function applyRules(
     return false;
   }
 
-  return rules.some(rule => {
+  return rules.some((rule) => {
     if (!rule.pattern.test(url)) {
       return false;
     }
@@ -26,7 +26,7 @@ export function applyRules(
     }
 
     if (Array.isArray(rule.httpMethod)) {
-      return rule.httpMethod.some(m => m === normalizedMethod);
+      return rule.httpMethod.some((m) => m === normalizedMethod);
     } else {
       return rule.httpMethod === normalizedMethod;
     }
