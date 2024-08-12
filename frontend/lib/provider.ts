@@ -2,7 +2,7 @@ import { decodeValue } from "@latticexyz/protocol-parser/internal"
 import BigNumber from "bignumber.js"
 import { ethers } from "ethers"
 
-import { DVP_CONTRACT_ADDRESS, DVP_OFFERCONTRACT_ADDRESS } from "./constants"
+import { DVP_CONTRACT_ADDRESS } from "./constants"
 import { env } from "./env.mjs"
 import { rawDataSchemas } from "./types"
 

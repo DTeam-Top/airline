@@ -44,7 +44,7 @@ export const BuyerSection = () => {
     const [buyBtnHidden, setBuyBtnHidden] = useState(true)
     const [buyLoading, setBuyLoading] = useState(false)
     const [approveLoading, setApproveLoading] = useState(false)
-    const [setApproved] = useState(false)
+    const [approved, setApproved] = useState(false)
     const [error, setError] = useState("")
     const [txURL, settxURL] = useState("")
     const [open, setOpen] = useState(false)
